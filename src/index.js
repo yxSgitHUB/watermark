@@ -90,25 +90,38 @@ function drawText(ctx, text, x, y, maxWidth, lineHeight, rotate) {
   ctx.rotate((rotate * Math.PI) / 180);
 
   const words = text.split("");
+  const textWithLine = text.split('\n');
+  const maxLineWidth = textWithLine.reduce((max, line) => {
+    const metrics = ctx.measureText(line);
+    return Math.max(max, metrics.width);
+  },0)
   let line = "";
-  const indent = lineHeight * Math.sin((rotate * Math.PI) / 180);
-  let lineNum = rotate < 0 ? -1 : 0;
-
+  // const indent = lineHeight;
+  // let lineNum = rotate < 0 ? -1 : 0;
   for (let i = 0; i < words.length; i++) {
     const testLine = line + words[i];
     const metrics = ctx.measureText(testLine);
     const testWidth = metrics.width;
-
-    if (testWidth > maxWidth && i > 0) {
-      ctx.fillText(line, indent * lineNum++, 0);
-      line = words[i];
+    if(words[i] == "\n"){
+      const lineWidth = ctx.measureText(line).width;
+      const offset = (maxLineWidth - lineWidth) / 2 + 10;
+      ctx.fillText(line, offset, 0);
       ctx.translate(0, lineHeight);
+      line = "";
+    }else if (testWidth > maxWidth && i > 0) {
+      const lineWidth = ctx.measureText(line).width;
+      const offset = (maxLineWidth - lineWidth) / 2 + 10;
+      ctx.fillText(line, offset, 0);
+      ctx.translate(offset, lineHeight);
+      line = words[i];
     } else {
       line = testLine;
     }
   }
-
-  ctx.fillText(line, indent * lineNum, 0);
+  const lineWidth = ctx.measureText(line).width;
+  const offset = (maxLineWidth - lineWidth) / 2 + 10;
+  ctx.fillText(line, offset, 0);
+  ctx.translate(0, lineHeight);
   ctx.restore();
 }
 
@@ -135,7 +148,7 @@ const setWatermark = (dom, str, options) => {
   // 如果 mode 是 stagger，space 增大两倍
   let spaceX = options.xSpace;
   let spaceY = options.ySpace;
-  if (["stagger", "s"].includes(options.mode)) {
+  if (["stagger", "s","n"].includes(options.mode)) {
     spaceX = options.xSpace * 2;
     spaceY = options.ySpace * 2;
   }
@@ -259,11 +272,11 @@ const setWatermark = (dom, str, options) => {
   wmContainer.style.paddingTop = `${options.top}px`;
   wmContainer.style.paddingLeft = `${options.left}px`;
   wmContainer.style.width =
-    (dom.clientWidth || document.documentElement.clientWidth) -
+    (dom.scrollWidth || document.documentElement.scrollWidth) -
     options.left +
     "px";
   wmContainer.style.height =
-    (dom.clientHeight || document.documentElement.clientHeight) -
+    (dom.scrollHeight || document.documentElement.scrollHeight) -
     options.top +
     "px";
 
