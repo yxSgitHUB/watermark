@@ -17,6 +17,9 @@ importers:
       '@babel/plugin-proposal-optional-chaining':
         specifier: ^7.21.0
         version: 7.21.0(@babel/core@7.27.4)
+      '@babel/plugin-transform-block-scoping':
+        specifier: ^7.27.5
+        version: 7.27.5(@babel/core@7.27.4)
       '@babel/preset-env':
         specifier: ^7
         version: 7.27.2(@babel/core@7.27.4)

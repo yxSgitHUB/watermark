@@ -33,7 +33,7 @@ const defaultOptions = {
   parentSelector: "", // 挂载的父元素选择器，优先级高于 parentNode
   observer: false, // 是否观察父元素变化，自动更新水印
   observerNode: null, // 要观察的元素，不传则默认为 parentNode
-  prevent: false // 是否防止水印被篡改
+  prevent: false, // 是否防止水印被篡改
 };
 
 function deleteElement(id) {
@@ -90,11 +90,11 @@ function drawText(ctx, text, x, y, maxWidth, lineHeight, rotate) {
   ctx.rotate((rotate * Math.PI) / 180);
 
   const words = text.split("");
-  const textWithLine = text.split('\n');
+  const textWithLine = text.split("\n");
   const maxLineWidth = textWithLine.reduce((max, line) => {
     const metrics = ctx.measureText(line);
     return Math.max(max, metrics.width);
-  },0)
+  }, 0);
   let line = "";
   // const indent = lineHeight;
   // let lineNum = rotate < 0 ? -1 : 0;
@@ -102,13 +102,13 @@ function drawText(ctx, text, x, y, maxWidth, lineHeight, rotate) {
     const testLine = line + words[i];
     const metrics = ctx.measureText(testLine);
     const testWidth = metrics.width;
-    if(words[i] == "\n"){
+    if (words[i] == "\n") {
       const lineWidth = ctx.measureText(line).width;
       const offset = (maxLineWidth - lineWidth) / 2 + 10;
       ctx.fillText(line, offset, 0);
       ctx.translate(0, lineHeight);
       line = "";
-    }else if (testWidth > maxWidth && i > 0) {
+    } else if (testWidth > maxWidth && i > 0) {
       const lineWidth = ctx.measureText(line).width;
       const offset = (maxLineWidth - lineWidth) / 2 + 10;
       ctx.fillText(line, offset, 0);
@@ -134,7 +134,10 @@ function drawText(ctx, text, x, y, maxWidth, lineHeight, rotate) {
  */
 const setWatermark = (dom, str, options) => {
   if (!dom) {
-    console.error(`${WARN} Could not load watermark. Dom is null. content:`, str);
+    console.error(
+      `${WARN} Could not load watermark. Dom is null. content:`,
+      str
+    );
     return;
   }
 
@@ -148,7 +151,7 @@ const setWatermark = (dom, str, options) => {
   // 如果 mode 是 stagger，space 增大两倍
   let spaceX = options.xSpace;
   let spaceY = options.ySpace;
-  if (["stagger", "s","n"].includes(options.mode)) {
+  if (["stagger", "s", "n"].includes(options.mode)) {
     spaceX = options.xSpace * 2;
     spaceY = options.ySpace * 2;
   }
@@ -235,8 +238,9 @@ const setWatermark = (dom, str, options) => {
     str,
     0,
     (options.angle < 0 ? 1 : 0) *
-    options.width *
-    Math.sin((Math.abs(options.angle) * Math.PI) / 180) + lineHeight * (4 / 5), // bottom 对齐
+      options.width *
+      Math.sin((Math.abs(options.angle) * Math.PI) / 180) +
+      lineHeight * (4 / 5), // bottom 对齐
     options.width,
     lineHeight,
     options.angle
@@ -305,7 +309,9 @@ const setWatermark = (dom, str, options) => {
     case "s":
       div.style.backgroundImage = `url(${base64Url}), url(${base64Url})`;
       div.style.backgroundRepeat = "repeat, repeat";
-      div.style.backgroundPosition = `0 0, ${(options.width + spaceX) / 2}px ${(options.height + spaceY) / 2}px`;
+      div.style.backgroundPosition = `0 0, ${(options.width + spaceX) / 2}px ${
+        (options.height + spaceY) / 2
+      }px`;
       break;
     case "normal":
     case "n":
@@ -314,7 +320,9 @@ const setWatermark = (dom, str, options) => {
   }
 
   // 最后设置背景大小
-  div.style.backgroundSize = `${options.width + spaceX}px ${options.height + spaceY}px`;
+  div.style.backgroundSize = `${options.width + spaceX}px ${
+    options.height + spaceY
+  }px`;
 
   // [test]
   if (__DEV__) {
@@ -348,7 +356,10 @@ class Watermark {
    * 水印配置项
    */
   _options = Object.assign({}, defaultOptions);
-
+  /**
+   * 是否正在计算
+   */
+  isDoing = false;
   /**
    * Creates an instance of Watermark.
    * 两种方式：
@@ -392,7 +403,7 @@ class Watermark {
         `${WARN} You have set 'options.parentSelector': (${this._options.parentSelector}), but it seems that the selector does not match any element. You may need to refresh manually or change/delete the selector param.`
       );
 
-      return
+      return;
     }
 
     if (document.readyState === "loading") {
@@ -451,17 +462,14 @@ class Watermark {
 
       if (ResizeObserver) {
         this._observerObs = new ResizeObserver(
-          throttle(entries => {
-            entries.forEach(entry => {
-              this._do();
-            });
+          throttle((entries) => {
+            this._do();
           }),
-          100
+          300
         );
 
         // 选择目标节点
-        const target =
-          this._options.observerNode || this._targetNode;
+        const target = this._options.observerNode || this._targetNode;
         this._observerObs.observe(target, { attributes: true });
       } else {
         console.warn(
@@ -477,11 +485,9 @@ class Watermark {
 
       if (MutationObserver) {
         this._preventObs = new MutationObserver(
-          throttle(mutations => {
-            mutations.forEach(mutation => {
-              this._do();
-            });
-          }, 100)
+          throttle((mutations) => {
+            this._do();
+          }, 300)
         );
 
         // 选择目标节点
@@ -491,7 +497,7 @@ class Watermark {
           childList: true,
           characterData: true,
           attributeOldValue: true,
-          characterDataOldValue: true
+          characterDataOldValue: true,
         });
       } else {
         console.warn(
@@ -509,25 +515,38 @@ class Watermark {
   }
 
   _do() {
-    // 根据倍数计算各种数值
-    if (typeof this._options.ratio === "number" && this._options.ratio !== 1) {
-      this._options.top *= this._options.ratio;
-      this._options.left *= this._options.ratio;
-      this._options.xSpace *= this._options.ratio;
-      this._options.ySpace *= this._options.ratio;
-      this._options.fontsize *= this._options.ratio;
-
-      // 单独计算宽高
-      if (typeof this._options.width === "number") {
-        this._options.width *= this._options.ratio;
-      }
-
-      if (typeof this._options.height === "number") {
-        this._options.height *= this._options.ratio;
-      }
+    const _that = this
+    if (_that.isDoing) {
+      return;
     }
+    _that.isDoing = true;
+    new Promise((resolve) => {
+      // 根据倍数计算各种数值
+      if (
+        typeof this._options.ratio === "number" &&
+        this._options.ratio !== 1
+      ) {
+        this._options.top *= this._options.ratio;
+        this._options.left *= this._options.ratio;
+        this._options.xSpace *= this._options.ratio;
+        this._options.ySpace *= this._options.ratio;
+        this._options.fontsize *= this._options.ratio;
 
-    this.base64 = setWatermark(this._targetNode, this.content, this._options);
+        // 单独计算宽高
+        if (typeof this._options.width === "number") {
+          this._options.width *= this._options.ratio;
+        }
+
+        if (typeof this._options.height === "number") {
+          this._options.height *= this._options.ratio;
+        }
+      }
+
+      this.base64 = setWatermark(this._targetNode, this.content, this._options);
+      resolve();
+    }).finally(()=>{
+      _that.isDoing = false;
+    });
   }
 
   _dispose() {
